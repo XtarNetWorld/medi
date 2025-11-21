@@ -1,64 +1,57 @@
-const CACHE = 'medireminder-v6';
-const OFFLINE_PAGE = '/';
+const CACHE = 'medireminder-v7';
 
-// Cache everything
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll([
-      '/', '/index.html', '/spl.jpg', '/ringtone.mp3'
-    ]))
-  );
-  self.skipWaiting();
+self.addEventListener('install', (e) => {
+    e.waitUntil(caches.open(CACHE).then(cache => 
+        cache.addAll(['/', 'index.html', 'spl.jpg', 'icon-192.png', 'ringtone.mp3'])
+    ));
+    self.skipWaiting();
 });
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+self.addEventListener('fetch', (e) => {
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
 
-// Background alarm check every ~15-60 mins (best Chrome allows)
-self.addEventListener('periodicsync', event => {
-  if (event.tag === 'check-alarms') {
-    event.waitUntil(checkAndFireAlarms());
-  }
-});
-
-async function checkAndFireAlarms() {
-  const db = await openDB();
-  const alarms = await getAllAlarms(db);
-  const now = Date.now();
-
-  for (const alarm of alarms) {
-    if (alarm.active && Math.abs(alarm.time - now) < 5*60*1000) { // ±5 min
-      self.registration.showNotification("Medicine Time!", {
-        body: `${alarm.name} - ${alarm.dosage}`,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        tag: "alarm-" + alarm.id,
-        renotify: true,
-        requireInteraction: true,
-        vibrate: [500, 200, 500, 200, 500],
-        actions: [
-          { action: "taken", title: "Taken" },
-          { action: "snooze", title: "Snooze 5min" }
-        ],
-        data: { url: "/" }
-      });
+// Background Alarm Check (Runs ~every 15min)
+self.addEventListener('periodicsync', (e) => {
+    if (e.tag === 'check-alarms') {
+        e.waitUntil(checkAlarms());
     }
-  }
+});
+
+async function checkAlarms() {
+    const db = await openDB();
+    const alarms = await getAlarms(db);
+    const now = Date.now();
+    alarms.forEach(alarm => {
+        if (alarm.active && Math.abs(alarm.time - now) < 300000) { // ±5min
+            self.registration.showNotification('⏰ Medicine Alarm!', {
+                body: `${alarm.name}: Take ${alarm.dosage} NOW!`,
+                icon: 'icon-192.png',
+                badge: 'icon-192.png',
+                vibrate: [1000, 500, 1000],
+                requireInteraction: true, // Stays until dismissed
+                actions: [{ action: 'TAKEN', title: 'Taken ✓' }, { action: 'SNOOZE', title: 'Snooze 10min' }],
+                data: { url: '/', alarmId: alarm.id },
+                tag: 'medicine-alarm' // Groups multiples
+            });
+            // Post message to open app
+            self.clients.matchAll().then(clients => clients.forEach(c => c.postMessage({ action: 'alarm-trigger' })));
+        }
+    });
 }
 
-// Simple IndexedDB wrapper
+// IDB Helpers
 function openDB() {
-  return indexedDB.open('MediReminderDB', 1, upgrade => {
-    upgrade.createObjectStore('alarms', { keyPath: 'id' });
-  }).onsuccess = e => e.target.result;
+    return new Promise(resolve => {
+        const req = indexedDB.open('MediReminderDB', 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore('alarms', { keyPath: 'id' });
+        req.onsuccess = e => resolve(e.target.result);
+    });
 }
 
-function getAllAlarms(db) {
-  return new Promise(resolve => {
-    const tx = db.transaction('alarms');
-    tx.objectStore('alarms').getAll().onsuccess = e => resolve(e.target.result);
-  });
+function getAlarms(db) {
+    return new Promise(resolve => {
+        const tx = db.transaction('alarms', 'readonly');
+        tx.objectStore('alarms').getAll().onsuccess = e => resolve(e.target.result);
+    });
 }
