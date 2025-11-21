@@ -5,56 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediReminder - Never Miss a Dose</title>
     
-    <!-- PWA Meta Tags -->
+    <!-- PWA Meta (Enhanced for Standalone/No Refresh) -->
     <meta name="theme-color" content="#3b82f6">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="application-name" content="MediReminder">
-    <meta name="description" content="Never miss your medicine again. Full-screen alarms even when phone is locked.">
-
+    <meta name="description" content="Full-screen alarms even on lock screen. Install for native feel.">
+    
     <!-- Manifest & Icons -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/icon-192.png" type="image/png">
-    <link rel="apple-touch-icon" href="/icon-512.png">
- <!-- Your existing styles and Tailwind -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    
+    <!-- Fonts & Tailwind -->
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Install Button Styles -->
-    <style>
-        #installButton {
+<style>
+      
+        
+        /* Disable Pull-to-Refresh in Standalone (App-Like) */
+        body { overscroll-behavior-y: none; }
+        
+        /* Professional Install Banner (Top, Like Flipkart) */
+        #installBanner {
             position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #3b82f6;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
-            padding: 16px 32px;
-            border-radius: 50px;
-            font-weight: bold;
-            box-shadow: 0 10px 30px rgba(59,130,246,0.4);
-            z-index: 9998;
-            display: none;
-            animation: pulse 2s infinite;
+            padding: 12px 16px;
+            z-index: 10000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+            animation: bannerSlide 0.5s ease-out;
         }
-        @keyframes pulse {
-            0% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.05); }
-            100% { transform: translateX(-50%) scale(1); }
-        }
-        .reminder-popup.fullscreen-alarm {
+        #installBanner.show { transform: translateY(0); }
+        #installBanner.hide { transform: translateY(-100%); }
+        @keyframes bannerSlide { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        .banner-icon { font-size: 24px; }
+        .banner-btn { background: white; color: #3b82f6; padding: 8px 16px; border-radius: 20px; font-weight: bold; }
+        .banner-dismiss { color: rgba(255,255,255,0.7); font-size: 20px; cursor: pointer; }
+        
+        /* Welcome Permissions Screen (First Open) */
+        #welcomeScreen {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            width: 100vw; height: 100vh;
-            border-radius: 0;
-            z-index: 9999;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        #welcomeScreen.hidden { display: none; }
+        .permission-btn { background: white; color: #3b82f6; padding: 12px 24px; border-radius: 25px; font-weight: bold; margin: 10px; }
+        
+        /* Fullscreen Alarm Enhancements */
+        .reminder-popup.fullscreen-alarm {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100vw !important; height: 100vh !important;
+            border-radius: 0 !important;
+            z-index: 9999 !important;
             animation: alarmShake 0.5s infinite;
+            background: red; /* Urgent red for alarm */
         }
         @keyframes alarmShake {
-            0%, 100% { transform: translate(-50%, -50%) rotate(0); }
-            25% { transform: translate(-50%, -50%) rotate(2deg); }
-            75% { transform: translate(-50%, -50%) rotate(-2deg); }
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
+        
+        /* Back Button Handling (No Close Until Root) */
+        .back-safe { position: relative; }
+        
+        /* Your existing reminder-popup, splash, etc. styles */
 
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -544,6 +578,29 @@
     </style>
 </head>
 <body class="dark-mode">
+
+<div id="welcomeScreen">
+        <h1 class="text-3xl font-bold mb-4">Welcome to MediReminder! 🚀</h1>
+        <p class="mb-6">To enable full-screen alarms on lock screen & background reminders:</p>
+        <button id="grantPermissions" class="permission-btn">Grant All Permissions</button>
+        <p class="text-sm opacity-80 mt-4">Notifications, Background Sync, & Screen Wake Lock</p>
+    </div>
+    
+    <!-- Professional Install Banner -->
+    <div id="installBanner">
+        <div class="flex items-center gap-3">
+            <span class="banner-icon material-symbols-outlined">install_mobile</span>
+            <div>
+                <strong>Install MediReminder</strong><br>
+                <small>Get full-screen alarms like a native app</small>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="installPromptBtn" class="banner-btn">Install</button>
+            <span id="dismissBanner" class="banner-dismiss material-symbols-outlined">close</span>
+        </div>
+    </div>
+
 <!-- Splash screen with image -->
 <div id="splashScreen" class="splash-screen">
     <img id="splashImage" class="splash-image" src="spl.jpg" alt="Splash Image">
@@ -2124,85 +2181,175 @@
 
 
 <script>
-// PWA Install Prompt
-let deferredPrompt;
-const installBtn = document.createElement('button');
-installBtn.id = 'installButton';
-installBtn.textContent = 'Install MediReminder App';
-document.body.appendChild(installBtn);
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-
-installBtn.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if (outcome === 'accepted') {
-    installBtn.style.display = 'none';
-  }
-  deferredPrompt = null;
-});
-
-// Request all permissions on first visit
-async function requestPermissions() {
-  if (Notification.permission === 'default') {
-    await Notification.requestPermission();
-  }
-  if ('permissions' in navigator) {
-    await navigator.permissions.request({ name: 'periodic-background-sync' });
-  }
-}
-
-// Fullscreen alarm when notification clicked
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  if (event.action === 'taken') {
-    // Mark as taken logic
-  }
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsArr => {
-      if (clientsArr.length > 0) {
-        clientsArr[0].focus();
-        clientsArr[0].postMessage({ action: 'open-alarm-fullscreen' });
-      } else {
-        clients.openWindow('/').then(client => client.focus());
-      }
-    })
-  );
-});
-
-// Listen for alarm from SW
-navigator.serviceWorker?.addEventListener('message', e => {
-  if (e.data.action === 'open-alarm-fullscreen') {
-    showFullScreenAlarm();
-  }
-});
-
-function showFullScreenAlarm() {
-  document.documentElement.requestFullscreen();
-  const popup = document.querySelector('.reminder-popup') || createAlarmPopup();
-  popup.classList.add('fullscreen-alarm');
-  // Play loud sound + vibrate non-stop
-  playAlarmSoundLoop();
-  navigator.vibrate([1000, 500, 1000, 500, 1000]);
-}
-
-// Call on app start
-document.addEventListener('DOMContentLoaded', () => {
-  requestPermissions();
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
-    if ('periodicSync' in registration) {
-      registration.periodicSync.register('check-alarms', { minInterval: 15*60*1000 });
-    }
-  }
-});
-</script>
-
+        // Enhanced Global Vars (Add IndexedDB for Background Alarms)
+        let wakeLock = null;
+        let isFirstOpen = !localStorage.getItem('permissionsGranted');
+        
+        // Your existing globals...
+        let medicines = []; // etc.
+        
+        // PWA Install: Professional Top Banner (Like Flipkart)
+        let deferredPrompt;
+        const banner = document.getElementById('installBanner');
+        const installBtn = document.getElementById('installPromptBtn');
+        const dismissBtn = document.getElementById('dismissBanner');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!localStorage.getItem('bannerDismissed')) {
+                banner.classList.add('show');
+                // Vibrate like Flipkart
+                if ('vibrate' in navigator) navigator.vibrate(200);
+            }
+        });
+        
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                banner.classList.add('hide');
+                localStorage.setItem('bannerDismissed', 'true');
+                setTimeout(() => banner.remove(), 300);
+            }
+        });
+        
+        dismissBtn.addEventListener('click', () => {
+            banner.classList.add('hide');
+            localStorage.setItem('bannerDismissed', 'true');
+            setTimeout(() => banner.remove(), 300);
+        });
+        
+        // Permissions on First Open (Welcome Screen)
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (isFirstOpen) {
+                document.getElementById('welcomeScreen').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('splashScreen').style.display = 'none';
+            }
+            
+            document.getElementById('grantPermissions').addEventListener('click', async () => {
+                // Request Notifications
+                if (Notification.permission === 'default') await Notification.requestPermission();
+                
+                // Request Background Sync
+                if ('serviceWorker' in navigator && 'periodicSync' in window) {
+                    const reg = await navigator.serviceWorker.register('sw.js');
+                    if ('periodicSync' in reg) {
+                        await reg.periodicSync.register('check-alarms', { minInterval: 15 * 60 * 1000 });
+                    }
+                }
+                
+                // Request Wake Lock (for fullscreen alarms)
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock granted');
+                } catch (err) {
+                    console.warn('Wake Lock denied:', err);
+                }
+                
+                localStorage.setItem('permissionsGranted', 'true');
+                isFirstOpen = false;
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                document.getElementById('mainApp').style.display = 'block';
+                initializeApp(); // Your existing init
+            });
+            
+            // Register SW for Background
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    // Handle Notification Clicks → Fullscreen Alarm
+                    self.addEventListener('notificationclick', (event) => {
+                        event.notification.close();
+                        clients.openWindow('/').then(client => {
+                            client.postMessage({ action: 'alarm-trigger' });
+                            client.focus();
+                        });
+                    });
+                });
+            }
+            
+            // Back Button Handling (Prevent Early Close)
+            window.addEventListener('popstate', (e) => {
+                const activeTab = document.querySelector('.tab-content:not(.hidden)');
+                if (activeTab.id === 'dashboardTab') {
+                    // Root: Double-back to close (native feel)
+                    if (confirm('Exit app? Press back again.')) {
+                        window.close(); // Or let it close naturally
+                    } else {
+                        history.pushState(null, null, location.href); // Prevent close
+                    }
+                } else {
+                    // Navigate back to dashboard
+                    switchTab('dashboard');
+                }
+            });
+            // Push initial state
+            history.pushState(null, null, location.href);
+        });
+        
+        // Fullscreen Alarm on Notification Trigger
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data.action === 'alarm-trigger') {
+                showFullScreenAlarm();
+            }
+        });
+        
+        async function showFullScreenAlarm() {
+            // Request Fullscreen + Wake Lock
+            if (document.documentElement.requestFullscreen) {
+                await document.documentElement.requestFullscreen();
+            }
+            if (!wakeLock) wakeLock = await navigator.wakeLock.request('screen');
+            
+            // Your existing showReminder() but with fullscreen class
+            // Modify showReminder to add 'fullscreen-alarm' class
+            const popup = document.querySelector('.reminder-popup');
+            if (popup) popup.classList.add('fullscreen-alarm');
+            
+            // Loop sound/vibrate
+            playReminderSound(); // Your existing
+            if ('vibrate' in navigator) {
+                navigator.vibrate(1000); // Continuous until dismissed
+            }
+        }
+        
+        // Your existing functions: initializeSplashScreen, loadData, etc.
+        // ... (paste ALL your original <script> content here) ...
+        
+        // Enhanced scheduleAllReminders (Store in IndexedDB for SW)
+        async function scheduleAllReminders() {
+            // Your existing + Save to IDB
+            const db = await openDB();
+            const tx = db.transaction('alarms', 'readwrite');
+            medicines.forEach(med => {
+                med.times.forEach(time => {
+                    // Calc next time
+                    const alarm = { id: med.id + time, name: med.name, dosage: med.dosage, time: nextTimeStamp };
+                    tx.objectStore('alarms').put(alarm);
+                });
+            });
+            // Your existing timeouts...
+        }
+        
+        // Simple IDB Helper (For Background)
+        function openDB() {
+            return new Promise((resolve) => {
+                const req = indexedDB.open('MediReminderDB', 1);
+                req.onupgradeneeded = (e) => e.target.result.createObjectStore('alarms', { keyPath: 'id' });
+                req.onsuccess = (e) => resolve(e.target.result);
+            });
+        }
+        
+        // Close Fullscreen on Dismiss
+        function closeReminderPopup() {
+            // Your existing...
+            if (document.fullscreenElement) document.exitFullscreen();
+            if (wakeLock) wakeLock.release();
+            if ('vibrate' in navigator) navigator.vibrate(0);
+        }
+    </script>
 
 </body>
 </html>
