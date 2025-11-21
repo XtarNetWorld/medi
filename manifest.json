@@ -1,22 +1,18 @@
 {
-  "name": "MediReminder - Medicine Alarm",
+  "name": "MediReminder - Smart Medicine Alarm",
   "short_name": "MediReminder",
-  "description": "Never miss your medicine. Full-screen alarm even when phone locked",
+  "description": "Full-screen lock screen alarms. Works offline & in background.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
+  "categories": ["health", "productivity"],
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "screenshots": [
+    { "src": "screenshot1.png", "sizes": "1080x1920", "type": "image/png" } // Optional: Add app screenshot
   ]
 }
